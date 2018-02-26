@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+this_dir="$(dirname "$0")"
+. "$this_dir/lib"
+
+docker_tag=bengomesh-docker
+
+usage() {
+	# print usage instructions for this digitalocean-exitnode script
+	# if it's a symlink, you dont need to specify <droplet_name>
+	command="$0"
+	cat <<-END
+	Usage:
+		$command [-b <do_build>] [args]
+
+    Flags:
+        -b              Whether to docker build
+
+	END
+}
+
+main() {
+	if $DOCKER_BUILD; then
+        docker build -t bengomesh "$this_dir/.." > /dev/null
+    fi
+    docker run \
+        -v "$(pwd)/$this_dir/../":/opt/bengomesh \
+        -v "$HOME"/.config/doctl/config.yaml:/root/.config/doctl/config.yaml \
+        -v "$HOME"/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub \
+        bengomesh \
+        "$@"
+}
+
+main "$@"

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+set -e
+
+this_dir="$(dirname "$0")"
+. "$this_dir/lib"
 
 usage() {
 	# print usage instructions for this digitalocean-exitnode script
@@ -11,32 +15,42 @@ usage() {
 	Usage:
 		$command_start [command] [options]
 		$command_start up
+		$command_start status
 		$command_start down [-f]
 
 	Commands:
-		up						create/launch the exitnode
-		down					delete the exitnode
+		up   				create/launch the exitnode
+		down				delete the exitnode
 
 	Options:
-		-h| --help				print this help text
-		-f						force deletion, i.e. dont ask for confirmation
+		-h| --help			print this help text
+		-f   				force deletion, i.e. dont ask for confirmation
 	END
 }
 
 DO_EXITNODE_SIZE=${DO_EXITNODE_SIZE:-"512mb"}
 DO_EXITNODE_REGION=${DO_EXITNODE_REGION:-"nyc3"}
 DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS=${DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS:-""}
-DO_EXITNODE_SSH_PRIVATE_KEY_FILE=${DO_EXITNODE_SSH_PRIVATE_KEY_FILE:-"$HOME/.ssh/id_rsa"}
-# echo "DO_EXITNODE_SSH_PRIVATE_KEY_FILE=$DO_EXITNODE_SSH_PRIVATE_KEY_FILE"
-_id_rsa_fingerprint="$(ssh-keygen -Emd5 -lf "$DO_EXITNODE_SSH_PRIVATE_KEY_FILE" | cut -d' ' -f2 | cut -d':' -f2- )"
-DO_EXITNODE_SSH_KEY_FINGERPRINT=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$_id_rsa_fingerprint"}
-# echo "DO_EXITNODE_SSH_KEY_FINGERPRINT=$DO_EXITNODE_SSH_KEY_FINGERPRINT"
+DO_EXITNODE_SSH_PUBLIC_KEY_FILE=${DO_EXITNODE_SSH_PUBLIC_KEY_FILE:-"$HOME/.ssh/id_rsa.pub"}
+if [[ -z "$DO_EXITNODE_SSH_KEY_FINGERPRINT" ]] && ! test -f "$DO_EXITNODE_SSH_PUBLIC_KEY_FILE"; then
+	echo "private key file does not exist: $DO_EXITNODE_SSH_PUBLIC_KEY_FILE"
+	echo "specify DO_EXITNODE_SSH_KEY_FINGERPRINT or existent DO_EXITNODE_SSH_PUBLIC_KEY_FILE"
+	exit 1
+fi
+DO_EXITNODE_SSH_KEY_FINGERPRINT=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-""}
 DO_EXITNODE_IMAGE=${DO_EXITNODE_IMAGE:-"debian-8-x64"}
 
-debug_echo() {
-	if [ "$DEBUG" != "" ]; then
-		>&2 echo "$@";
-	fi
+ssh_key_fingerprint() {
+	ssh_key_file="$1"
+	case "$(uname)" in
+		Darwin) fingerprint="$(ssh-keygen -Emd5 -lf "$ssh_key_file" | cut -d' ' -f2 | cut -d':' -f2- )"
+			;;
+		*)
+			# tested on debian jessie. Doesn't have -Emd5 like on mac
+			fingerprint="$(ssh-keygen -lf "$ssh_key_file" | cut -d' ' -f 2)"
+			;;
+	esac
+	echo "$fingerprint"
 }
 
 main() {
@@ -126,7 +140,7 @@ _test() {
 	main "$test_vm_name" up > /dev/null
 
 	debug_echo "testing status"
-	main "$test_vm_name" status
+	main "$test_vm_name" status > /dev/null
 
 	debug_echo "testing down"
 	main "$test_vm_name" down -f
@@ -136,8 +150,9 @@ get_exitnode() {
 	debug_echo "get_exitnode($@)"
 	name="$1"
 
-	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{print $1}')"
-
+	listed="$(doctl compute droplet list "$name")"
+	num_droplets_with_name="$(echo "$listed" | sed 1d | wc -l | awk '{print $1}')"
+	echo "$listed"
 	[[ "$num_droplets_with_name" -gt "0" ]]
 }
 
@@ -207,14 +222,12 @@ do_droplet_create() {
 	name="$1"
 	# echo "name=$name"
 	args="${@:2}"
-	# use ~/.ssh/id_rsa key always.
-	# @TODO(bengo.co): make this configurable
-	ssh_key_fingerprint="$(ssh-keygen -Emd5 -lf ~/.ssh/id_rsa | cut -f2 -d' ')"
+	_ssh_key_fingerprint=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$(ssh_key_fingerprint $DO_EXITNODE_SSH_PUBLIC_KEY_FILE)"}
 	doctl compute droplet create "$name" \
 		--region "$DO_EXITNODE_REGION" \
 		--image "$DO_EXITNODE_IMAGE" \
 		--size "$DO_EXITNODE_SIZE" \
-		--ssh-keys "$DO_EXITNODE_SSH_KEY_FINGERPRINT" \
+		--ssh-keys "$_ssh_key_fingerprint" \
 		$DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS \
 		--wait
 

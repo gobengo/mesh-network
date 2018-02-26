@@ -1,0 +1,7 @@
+# common library functions for bengomesh
+
+debug_echo() {
+	if [ "$DEBUG" != "" ]; then
+		>&2 echo "$@";
+	fi
+}

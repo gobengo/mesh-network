@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+this_dir="$(dirname "$0")"
+. "$this_dir/lib"
+
+usage() {
+	# print usage instructions for this digitalocean-exitnode script
+	cat <<-END
+	Usage:
+		$0 digitalocean-exitnode [options]
+
+	Options:
+		-h| --help				print this help text
+	END
+}
+
+main() {
+	debug_echo "main($@) $#"
+	if [[ "$#" == "0" ]]; then
+        needs_usage=1
+	fi
+
+	# main entrypoint for this script
+	# arg parsing inspired by https://stackoverflow.com/a/2875513
+	while test $# != 0
+	do
+		case "$1" in
+		digitalocean-exitnode)
+			command="$this_dir/digitalocean-exitnode ${@:2}"
+			shift "$#"
+			;;
+		-h|--help|help)
+			usage
+			exit
+			;;
+		--) shift; break;;
+		*)  
+			echo "unknown_arg $1"
+			needs_usage=1
+			;;
+		esac
+		shift || true
+	done
+
+	if [ "$needs_usage" == 1 ]; then
+		usage
+	else
+		$command
+	fi
+}
+
+main "$@"
