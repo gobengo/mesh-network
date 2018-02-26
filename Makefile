@@ -9,3 +9,4 @@ git-submodules: lib/gobengo/exitnode
 lib/%: .gitmodules
 	$(GIT) submodule update --init
 	touch "$@"
+
