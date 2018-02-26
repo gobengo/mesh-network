@@ -49,7 +49,6 @@ main() {
 		# this file is a symlink, which means we'll treat its filename as the droplet name
 		name="$(basename $0)"
 	elif [ "$#" -gt "1" ]; then
-		echo "$@"
 		# not symlink, get droplet name from first arg
 		name="$1"
 		shift
@@ -61,36 +60,37 @@ main() {
 	do
 		case "$1" in
 		list)
-			doctl compute droplet list
+			command="doctl compute droplet list"
 			;;
 		test)
-			_test "${@:2}"
-			shift "$#"
+			args=${@:2}
+			shift "$#"			
+			command="_test "$args""
 			;;
 		up)
 			# if no args are passed, default droplet name to name of this file
 			args=${@:2}
-			debug_echo "up name=$name args=$args"
-			get_or_create_exitnode $name $args
 			shift "$#"
+			debug_echo "up name=$name args=$args"
+			command="get_or_create_exitnode $name $args"
 			;;
 		down)
 			args=${@:2}
-			debug_echo "down name=$name args=$args"
-			rm_exitnode $name $args
 			shift "$#"
+			debug_echo "down name=$name args=$args"
+			command="rm_exitnode $name $args"
 			;;
 		status)
 			args=${@:2}
-			debug_echo "name=$name args=$args"
-			get_exitnode $name $args
 			shift "$#"
+			debug_echo "name=$name args=$args"
+			command="get_exitnode $name $args"
 			;;
 		configure)
 			args=${@:2}
-			debug_echo "down name=$name args=$args"
-			configure_do_exitnode $name $args
 			shift "$#"
+			debug_echo "down name=$name args=$args"
+			command="configure_do_exitnode $name $args"
 			;;
 		-h|--help|help)
 			usage
@@ -104,23 +104,41 @@ main() {
 			was_unknown_arg=1
 			;;
 		esac
-		shift
+		shift || true
 	done
 
-	[ "$was_unknown_arg" == 1 ] && usage
+	if [ "$was_unknown_arg" == 1 ]; then
+		usage
+	else
+		$command
+	fi
 }
 
 _test() {
 # do a sanity check test of this script
-	echo "_test($@)"
-	echo "testing up"
-	main up
+	# set -x
+	set -e
+
+	debug_echo "_test($@)"
+	test_vm_name="bengomesh-test-vm-0"
+
+	debug_echo "testing up"
+	main "$test_vm_name" up > /dev/null
+
+	debug_echo "testing status"
+	main "$test_vm_name" status
+
+	debug_echo "testing down"
+	main "$test_vm_name" down -f
 }
 
 get_exitnode() {
 	debug_echo "get_exitnode($@)"
 	name="$1"
-	doctl compute droplet list "$name"
+
+	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{print $1}')"
+
+	[[ "$num_droplets_with_name" -gt "0" ]]
 }
 
 get_or_create_exitnode() {
@@ -136,9 +154,14 @@ get_or_create_exitnode() {
 }
 
 rm_exitnode() {
+	# remove an exitnode droplet by name
+	# Usage: rm_exitnode <droplet_name> [-f]
+	# Options
+	# 	-f			force removal. dont ask for permissions
 	debug_echo "rm_exitnode($@)"
 	name="$1"
-	args=${@:1}
+	shift
+	debug_echo "name=$name args=$@"
 	while test $# != 0
 	do
 		case "$1" in
@@ -152,11 +175,9 @@ rm_exitnode() {
 	done
 	doctl_delete_args=""
 	if [ "$force" == "1" ]; then
-		echo "its forcd"
 		doctl_delete_args+="-f"
 	fi
-	echo "doctl_delete_args=$doctl_delete_args"
-	echo "FINAL DELETE DROPLET name=$name force=$force"
+	debug_echo "doctl_delete_args=$doctl_delete_args"
 	doctl compute droplet delete "$name" $doctl_delete_args
 }
 
@@ -182,7 +203,7 @@ do_droplet_create() {
 			[extra_doctl_droplet_create_args]		Will be passed to \`doctl compute droplet create\`
 		END
 	}
-	echo "do_droplet_create($@)"
+	debug_echo "do_droplet_create($@)"
 	name="$1"
 	# echo "name=$name"
 	args="${@:2}"
@@ -215,7 +236,6 @@ do_droplet_exists() {
 	name="$1"
 	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{ print $1 }')"
 	if [ "0" = "$num_droplets_with_name" ]; then
-		echo "num_droplets_with_name is zero"
 		false
 	else
 		true
