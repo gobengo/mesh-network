@@ -10,7 +10,8 @@ debug_echo() {
 wait_for_ssh_keyscan() {
 	ssh_to_test="$1"
 	while [[ "$keyscan_success" != "1" ]]; do
-		keyscan_out="$(ssh-keyscan "$@")"
+		keyscan_out="$(ssh-keyscan "$@" 2>/dev/null)"
+		echo "after scan"
 		if [[ "$keyscan_out" != "" ]]; then
 			keyscan_success=1
 		else
