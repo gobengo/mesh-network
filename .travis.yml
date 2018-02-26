@@ -2,22 +2,20 @@ language: node_js
 env:
   global:
     secure: L2FtneI+bteDesuXik1/AC5ZM6y1e3Zmk8kwyGl/ZeBfVqnnWuK4fqw5Y8B6owvPen905slP69zwGyt14VYTExdZ8x53fa7tm9bZ6LSUIkqDiuzYsXytWu3tiBhao5lXG8l2LbcOoQqgbjQF3qUMynPNe7rhrNDRkxpFmdDtDqgJFJBSRZB22lYFot1jcyuYNuWIQiM8qRCa5X6ijQgFKy4iNHbRHQ0Oi4wn386LQM7neYpDnUnP6uR5i1J+3c7b7NOJHxdWT8tIp0dniQfQqwRtfovPUEqOv+YMZ1yCqvvi5boLThd1n+95NIS5mo/KBizY6BpS0pYbCNjnyXV/thlkl64yQOFFE5mN89XeNlW3omuQNYSaUY/dGgweiBm27qkE3AI5kIfyAzW8sS/Hy3ckW72Jp/XQv8KeuikRMzXQ/DBUKqRZ7TnD5qCljFU5MDc/Ekva0G3j/9rqc5iWLInyxOyJQU7PSBBraQv3E281pHjst83AG9I4IeQtAD98wzL/0+0lOT3B0dbNJfjhHgx+TIuJFS1xaDJIW3VlqPeia/3R5GKOzy2JO0TD0xN/QkT8Uwf3T0yBkJU+2mWXb6hkYWgViDbI6PS9HyLQ/6oM8opNvMXoE5BFXpyUyQcPGqM8Tr+Hi7B/Gh1RnWgyjHsKMiO20AIKtyOR9PMpajw=
-
-
 sudo: required
-
 services:
-  - docker
-
+- docker
 git:
   submodules: false
-
 before_install:
-# modify submodule URLs so travis fetches over HTTPS not SSH
 - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
 - make
 - docker build -t exitnode .
 - ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
-
+- ./bin/bengomesh-docker doctl-sshkey save
 script:
-- DEBUG=1 ./bin/bengomesh-docker digitalocean-exitnode test
+- DEBUG=1 ./bin/bengomesh-docker digitalocean-exitnode ${TRAVIS_BUILD_NUMBER}-travis-do-exitnode test
+after_script:
+- ./bin/bengomesh-docker doctl-sshkey delete -f
+dd:
+  secure: bmdTQ5yv5tQLOm3nfj6ZXSA1pwfjXatcR4nI6/G2wr3lxQqtSKIJnk/geAl2S6n6xF0oxxV1eOFGMAJBlYr2gfodg3Zs1Bs6PkXwdxey9/AdCZKyGztCof4qy0kH6O5+CKPdZfwTslPHf6rU32vQBrIKhqMMSZ4jBomuolhWAg3O1bqQtUqWy5CZHU9bQUhcIw2qu6fITabQoPPGYHALA0h87Czqy2oUNemu0JiKUzstO+aitR4rbKlkZlafjxiM5p0rq288IW7wZ7AtwYrxFdYL38KdaEZguRrVuHnIrIKJlCbPAWqMpPr+rcMGtQfe/au/gXTTXP66oz+yPY074hYIy+7RD71CWyipnS+JDMHRcYOq5PcoMWrgduvuqfNgB1vjMVgTpD1e0uf9tKHDqSmdnKGll4ijnK+mzL51BVN21Zqpur8mDw5WVfhL7M/orZt+bz1satGCay9cJ4nwCQXS3deWk3xujVTNONPuALU+7RauOV1GDvm0HElgH/tpoqJwUseI2i2OE8Qd3C6B9QsG7CJzswiVFeo9a/+GcUksmPBJiEPUxaVQFKbG3MN7Te3d9sPgJek10PT39BAEXzUk17C7z/KLwNUWm0DBx31b6MDWPWzGpCBGdtgv10xLe4SYM1q55MBj5+/051bnCkYArSkBZiImKcSwggbDhVM=

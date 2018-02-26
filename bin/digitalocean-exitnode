@@ -81,9 +81,10 @@ main() {
 			;;
 		test)
 			args=${*:2}
-			shift "$#"			
+			shift "$#"
+			# debug_echo "cmd=test name=$name args=$args"
 			command() {
-				_test "$args"
+				_test "$name" "$args"
 			}
 			;;
 		up)
@@ -92,7 +93,6 @@ main() {
 			shift "$#"
 			debug_echo "up name=$name args=$args"
 			command() {
-				set -x
 				droplet=$(get_or_create_exitnode "$name" "$args")
 				droplet_ip="$(echo "$droplet" | sed 1d | awk '{ print $3 }')"
 				wait_for_ssh_keyscan -H "$droplet_ip" >> ~/.ssh/known_hosts
@@ -132,7 +132,6 @@ main() {
 			;;
 		check)
 			args=${*:2}
-			echo "args=$args"
 			shift "$#"
 			debug_echo "check name=$name args=$args"
 			command() {
@@ -167,13 +166,16 @@ _test() {
 	set -e
 
 	debug_echo "_test($*)"
-	test_vm_name="bengomesh-test-vm-0"
+	test_vm_name="${1=-"bengomesh-test-vm-0"}"
 
-	debug_echo "testing up"
+	debug_echo "testing up name=$name"
 	main "$test_vm_name" up > /dev/null
 
 	debug_echo "testing status"
 	main "$test_vm_name" status > /dev/null
+
+	debug_echo "testing check"
+	main "$test_vm_name" check
 
 	debug_echo "testing down"
 	main "$test_vm_name" down -f
@@ -235,8 +237,8 @@ configure_do_exitnode() {
 	name="$1"
 	args=${*:1}
 	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
-	debug_echo "node_ip=$node_ip"
-	"$this_dir/../lib/gobengo/exitnode/build/remote" "root@$node_ip"
+	debug_echo "about to exitnode/build/remote root@$node_ip"
+	bash -x "$this_dir/../lib/gobengo/exitnode/build/remote" "root@$node_ip"
 }
 
 droplet_ip() {
@@ -291,7 +293,6 @@ do_droplet_create() {
 	}
 	debug_echo "do_droplet_create($*)"
 	name="$1"
-	# echo "name=$name"
 	_ssh_key_fingerprint=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$(ssh_key_fingerprint "$DO_EXITNODE_SSH_PUBLIC_KEY_FILE")"}
 	declare -a doctl_create_args_array=("$DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS")
 
@@ -308,7 +309,7 @@ do_droplet_create() {
 
 do_droplet_exists() {
 # usage: do_droplet_exists <name>
-	# echo "do_droplet_exists($*)"
+	debug_echo "do_droplet_exists($*)"
 	name="$1"
 	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{ print $1 }')"
 	if [ "0" = "$num_droplets_with_name" ]; then

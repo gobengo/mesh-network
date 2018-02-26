@@ -8,10 +8,10 @@ debug_echo() {
 }
 
 wait_for_ssh_keyscan() {
-	set -x
 	ssh_to_test="$1"
 	while [[ "$keyscan_success" != "1" ]]; do
-		keyscan_out="$(ssh-keyscan "$@")"
+		keyscan_out="$(ssh-keyscan "$@" 2>/dev/null)"
+		echo "after scan"
 		if [[ "$keyscan_out" != "" ]]; then
 			keyscan_success=1
 		else
@@ -28,4 +28,17 @@ wait_for_ssh() {
 		printf "."
 		sleep 2
 	done
+}
+
+ssh_key_fingerprint() {
+	ssh_key_file="$1"
+	case "$(uname)" in
+		Darwin) fingerprint="$(ssh-keygen -Emd5 -lf "$ssh_key_file" | cut -d' ' -f2 | cut -d':' -f2- )"
+			;;
+		*)
+		# tested on debian jessie. Doesn't have -Emd5 like on mac
+		fingerprint="$(ssh-keygen -lf "$ssh_key_file" | cut -d' ' -f 2)"
+		;;
+	esac
+	echo "$fingerprint"
 }

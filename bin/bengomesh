@@ -9,6 +9,7 @@ usage() {
 	cat <<-END
 	Usage:
 		$0 digitalocean-exitnode [options]
+		$0 doctl-sshkey
 
 	Options:
 		-h| --help				print this help text
@@ -28,6 +29,10 @@ main() {
 		case "$1" in
 		digitalocean-exitnode)
 			command="$this_dir/digitalocean-exitnode ${*:2}"
+			shift "$#"
+			;;
+		doctl-sshkey)
+			command="$this_dir/doctl-sshkey ${*:2}"
 			shift "$#"
 			;;
 		-h|--help|help)

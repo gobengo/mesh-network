@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+this_dir="$(dirname "$0")"
+# shellcheck source=./lib
+. "$this_dir/lib" # ssh_key_fingerprint
+
+main() {
+    debug_echo "main($*) $#"
+    case "$#" in
+        1)  command="$1";;
+        2)  key_file="$1"
+            command="$2";;
+    esac
+    key_file="${key_file:-"$HOME/.ssh/id_rsa.pub"}"
+
+    case "$command" in
+    save)
+        save_doctl_sshkey "$key_file" "$@";;
+    delete)
+        delete_doctl_sshkey "$key_file" "$@";;
+    *)
+        echo "unknown command $command";;
+    esac
+
+}
+
+save_doctl_sshkey() {
+    public_key_file="$1"
+    fingerprint="$(ssh_key_fingerprint "$public_key_file")"
+    key_name="bengomesh-default-$fingerprint"
+    if ! doctl compute ssh-key get "$fingerprint"; then
+        doctl compute ssh-key import "$key_name" --public-key-file "$public_key_file"
+    fi
+}
+
+delete_doctl_sshkey() {
+    public_key_file="$1"
+    rest_args=("${@:3}")
+    key_fingerprint="$(ssh_key_fingerprint "$public_key_file")"
+    # shellcheck disable=SC2086
+    doctl compute ssh-key delete "$key_fingerprint" ${rest_args[*]}
+}
+
+main "$@"

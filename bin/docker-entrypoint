@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-set -x
+# set -x
 this_dir="$(dirname "$0")"
 
-# if do token is defined
-if [ ! -z "$DIGITALOCEAN_ACCESS_TOKEN" ]; then
-    echo "$DIGITALOCEAN_ACCESS_TOKEN" | doctl auth init
-fi
+# if DO token is defined
+main() {
+	if [ ! -z "$DIGITALOCEAN_ACCESS_TOKEN" ]; then
+		doctl_config_file="$HOME/.config/doctl/config.yaml"
+		mkdir -p "$(dirname "$doctl_config_file")"
+		cat <<-EOF > "$doctl_config_file"
+		access-token: $DIGITALOCEAN_ACCESS_TOKEN
+		EOF
+		chmod 0600 "$doctl_config_file"
+	fi
+	"$this_dir/bengomesh" "$@"
+}
 
-"$this_dir/bengomesh" "$@"
+main "$@"
