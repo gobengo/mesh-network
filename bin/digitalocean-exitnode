@@ -74,37 +74,68 @@ main() {
 	do
 		case "$1" in
 		list)
-			command="doctl compute droplet list"
+			command() {
+				doctl compute droplet list
+			}
 			;;
 		test)
 			args=${@:2}
 			shift "$#"			
-			command="_test "$args""
+			command() {
+				_test "$args"
+			}
 			;;
 		up)
 			# if no args are passed, default droplet name to name of this file
 			args=${@:2}
 			shift "$#"
 			debug_echo "up name=$name args=$args"
-			command="get_or_create_exitnode $name $args"
+			command() {
+				set -x
+				droplet=$(get_or_create_exitnode $name $args)
+				droplet_ip="$(echo "$droplet" | sed 1d | awk '{ print $3 }')"
+				ssh-keyscan -H "$droplet_ip" >> ~/.ssh/known_hosts
+				configure_do_exitnode $name
+			}
 			;;
 		down)
 			args=${@:2}
 			shift "$#"
 			debug_echo "down name=$name args=$args"
-			command="rm_exitnode $name $args"
+			command() {
+				rm_exitnode $name $args
+			}
 			;;
 		status)
 			args=${@:2}
 			shift "$#"
 			debug_echo "name=$name args=$args"
-			command="get_exitnode $name $args"
+			command() {
+				get_exitnode $name $args
+			}
 			;;
 		configure)
 			args=${@:2}
 			shift "$#"
 			debug_echo "down name=$name args=$args"
-			command="configure_do_exitnode $name $args"
+			command() {
+				configure_do_exitnode $name $args
+			}
+			;;
+		ip)
+			args=${@:2}
+			shift "$#"
+			command() {
+				droplet_ip "$name"
+			}
+			;;
+		check)
+			args=${@:2}
+			shift "$#"
+			debug_echo "check name=$name args=$args"
+			command() {
+				check_do_exitnode $name $args
+			}
 			;;
 		-h|--help|help)
 			usage
@@ -124,7 +155,7 @@ main() {
 	if [ "$was_unknown_arg" == 1 ]; then
 		usage
 	else
-		$command
+		command
 	fi
 }
 
@@ -203,6 +234,44 @@ configure_do_exitnode() {
 	args=${@:1}
 	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
 	debug_echo "node_ip=$node_ip"
+	"$this_dir/../lib/gobengo/exitnode/build/remote" "root@$node_ip"
+}
+
+droplet_ip() {
+# get ip address of droplet by name
+	name="$1"
+	echo "$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
+}
+
+check_do_exitnode() {
+# ssh into a host and return diagnostic info to check if exitnode is working ok
+# Usage: check_do_exitnode <droplet_name>
+	debug_echo "check_do_exitnode($@)"
+	name="$1"
+	args=${@:1}
+	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
+	ssh_to="root@$node_ip"
+	_indent() {
+		$@ | sed 's/^/	/'
+	}
+	cat <<-END
+	exitnode diagnostic for $node_ip:
+	
+	ps aux | grep babel:
+	$(_indent ssh $ssh_to ps aux | grep babel)
+
+	cat /etc/babeld.conf:
+	$(_indent ssh $ssh_to cat /etc/babeld.conf)
+
+	ps aux | grep tunneldigger:
+	$(_indent ssh $ssh_to ps aux | grep tunneldigger)
+
+	cat /opt/tunneldigger/broker/l2tp_broker.cfg | head -n7:
+	$(_indent ssh $ssh_to cat /opt/tunneldigger/broker/l2tp_broker.cfg | head -n7)
+
+	ip route:
+	$(_indent ip route)
+	END
 }
 
 do_droplet_create() {
