@@ -2,6 +2,8 @@
 set -x
 this_dir="$(dirname "$0")"
 
+echo "in docker-entrypoint DIGITALOCEAN_ACCESS_TOKEN=$DIGITALOCEAN_ACCESS_TOKEN"
+
 # if do token is defined
 if [ ! -z "$DIGITALOCEAN_ACCESS_TOKEN" ]; then
     echo "$DIGITALOCEAN_ACCESS_TOKEN" | doctl auth init
