@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+cd "$(dirname "$0")"
+
+NODE_NAME="$(basename $0)"
+
+./digitalocean-exitnode up $NODE_NAME "$@"

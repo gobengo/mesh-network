@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+#!/usr/bin/env bash
+
+usage() {
+	# print usage instructions for this digitalocean-exitnode script
+	cat <<-END
+	Usage:
+		$0 [command] [options]
+		$0 install
+
+	Commands:
+		install					install osx dependencies
+
+	Options:
+		-h| --help			print this help text
+	END
+}
+
+main() {
+# main entrypoint for this script
+    if [ "$#" = "0" ]; then
+        usage
+        exit
+    fi
+    # arg parsing inspired by https://stackoverflow.com/a/2875513
+    while test $# != 0
+    do
+        case "$1" in
+        install)
+            install_osx_dependencies "${@:2}"
+            shift "$#"
+            ;;
+        -h|--help|help)
+            usage
+            exit
+            ;;
+        --) shift; break;;
+        *)  echo "unknown argument $1"
+            ;;
+        esac
+        shift
+    done
+}
+
+install_osx_dependencies() {
+    brew install doctl
+}
+
+main "$@"
+

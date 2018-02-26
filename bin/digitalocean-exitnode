@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+usage() {
+	# print usage instructions for this digitalocean-exitnode script
+	cat <<-END
+	Usage:
+		$0 [command] [options]
+		$0 up [--name <name>]
+
+	Commands:
+		up						create/launch the exitnode
+
+	Options:
+		-h| --help				print this help text
+		--name <name>			name of digitalocean droplet
+	END
+}
+
+DO_EXITNODE_SIZE=${DO_EXITNODE_SIZE:-"512mb"}
+DO_EXITNODE_REGION=${DO_EXITNODE_REGION:-"sfo2"}
+DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS=${DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS:-""}
+DO_EXITNODE_SSH_PRIVATE_KEY_FILE=${DO_EXITNODE_SSH_PRIVATE_KEY_FILE:-"~/.ssh/id_rsa"}
+_id_rsa_fingerprint="$(ssh-keygen -Emd5 -lf "$DO_EXITNODE_SSH_PRIVATE_KEY_FILE" | cut -d' ' -f2 | cut -d':' -f2- )"
+DO_EXITNODE_SSH_KEY_FINGERPRINT=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$_id_rsa_fingerprint"}
+DO_EXITNODE_IMAGE=${DO_EXITNODE_IMAGE:-"debian-8-x64"}
+
+echo "DO_EXITNODE_SIZE=$DO_EXITNODE_SIZE"
+
+main() {
+# main entrypoint for this script
+# arg parsing inspired by https://stackoverflow.com/a/2875513
+while test $# != 0
+do
+    case "$1" in
+	test)
+		_test "${@:2}"
+		shift "$#"
+		;;
+	up)
+		up_exitnode "${@:2}"
+		shift "$#"
+		;;
+    # -A) all_into_one=t
+    #     unpack_unreachable=--unpack-unreachable ;;
+	-h|--help|help)
+		usage
+		exit
+		;;
+    --ben|--other)
+        extra="$extra $1=$2"; shift ;;
+    --) shift; break;;
+    *)  unknown_arg "$1"
+		;;
+    esac
+    shift
+done
+}
+
+_test() {
+# do a sanity check test of this script
+	echo "_test($@)"
+	echo "testing up"
+	main up
+}
+
+up_exitnode() {
+	echo "up_exitnode($@)"
+	name="$1"
+	if do_droplet_exists "$name"; then
+		echo "do droplet already exists"
+	else
+		echo "droplet does not exist. need to create it"
+		do_droplet_create "$@"
+	fi
+}
+
+do_droplet_create() {
+	do_droplet_create_usage() {
+		cat <<-END
+		Create a DigitalOcean Droplet (aka a Virtual Machine or instance)
+
+		Usage:
+			$0 <name> [extra_doctl_droplet_create_args]
+
+		Options:
+			<name>									Name given to droplet
+			[extra_doctl_droplet_create_args]		Will be passed to \`doctl compute droplet create\`
+		END
+	}
+	echo "do_droplet_create($@)"
+	name="$1"
+	# echo "name=$name"
+	set -x;
+	args="${@:2}"
+	# use ~/.ssh/id_rsa key always.
+	# @TODO(bengo.co): make this configurable
+	ssh_key_fingerprint="$(ssh-keygen -Emd5 -lf ~/.ssh/id_rsa | cut -f2 -d' ')"
+	doctl compute droplet create "$name" \
+		--region "$DO_EXITNODE_REGION" \
+		--image "$DO_EXITNODE_IMAGE" \
+		--size "$DO_EXITNODE_SIZE" \
+		--ssh-keys "$DO_EXITNODE_SSH_KEY_FINGERPRINT" \
+		$DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS \
+		--wait
+
+	# while test $# != 0; do
+	# 	case "$1" in
+	# 	--name)
+	# 		name=$2
+	# 		shift 2
+	# 		;;
+	# 	esac
+	# 	shift
+	# done
+	# echo "name=$name"
+}
+
+do_droplet_exists() {
+	echo "do_droplet_exists($@)"
+	false
+}
+
+unknown_arg() {
+	echo "unknown_arg $@"
+}
+
+main "$@"
