@@ -1,0 +1,18 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## 0.0.0 - 2018-02-26
+### Added
+- project setup
+- tested docker or mac
+- ./bin/bengomesh digitalocean-exitnode - manage exitnodes on DO cloud
+
+[Unreleased]: https://github.com/gobengo/mesh-network/compare/v1.0.0...HEAD
+[0.0.1]: https://github.com/gobengo/mesh-network/compare/v0.0.1...v0.0.2
+[0.0.0]: https://github.com/gobengo/mesh-network/compare/7c485df7013cb28016f4a0171feaa2d9e74d88c9...v0.0.0
