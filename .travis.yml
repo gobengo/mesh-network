@@ -19,6 +19,7 @@ before_install:
 - cat .gitmodules
 - make
 - docker build -t exitnode .
+- ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
 
 script:
 - DEBUG=1 ./bin/bengomesh-docker digitalocean-exitnode test
