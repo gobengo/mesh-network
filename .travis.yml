@@ -12,10 +12,10 @@ before_install:
 - make
 - docker build -t exitnode .
 - ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
-- ./bin/doctl-sshkey ~/.ssh/.ssh/id_rsa.pub save
+- ./bin/doctl-sshkey ~/.ssh/id_rsa.pub save
 script:
 - DEBUG=1 ./bin/bengomesh-docker digitalocean-exitnode test
 after_script:
-- ./bin/doctl-sshkey ~/.ssh/.ssh/id_rsa.pub delete
+- ./bin/doctl-sshkey ~/.ssh/id_rsa.pub delete
 dd:
   secure: bmdTQ5yv5tQLOm3nfj6ZXSA1pwfjXatcR4nI6/G2wr3lxQqtSKIJnk/geAl2S6n6xF0oxxV1eOFGMAJBlYr2gfodg3Zs1Bs6PkXwdxey9/AdCZKyGztCof4qy0kH6O5+CKPdZfwTslPHf6rU32vQBrIKhqMMSZ4jBomuolhWAg3O1bqQtUqWy5CZHU9bQUhcIw2qu6fITabQoPPGYHALA0h87Czqy2oUNemu0JiKUzstO+aitR4rbKlkZlafjxiM5p0rq288IW7wZ7AtwYrxFdYL38KdaEZguRrVuHnIrIKJlCbPAWqMpPr+rcMGtQfe/au/gXTTXP66oz+yPY074hYIy+7RD71CWyipnS+JDMHRcYOq5PcoMWrgduvuqfNgB1vjMVgTpD1e0uf9tKHDqSmdnKGll4ijnK+mzL51BVN21Zqpur8mDw5WVfhL7M/orZt+bz1satGCay9cJ4nwCQXS3deWk3xujVTNONPuALU+7RauOV1GDvm0HElgH/tpoqJwUseI2i2OE8Qd3C6B9QsG7CJzswiVFeo9a/+GcUksmPBJiEPUxaVQFKbG3MN7Te3d9sPgJek10PT39BAEXzUk17C7z/KLwNUWm0DBx31b6MDWPWzGpCBGdtgv10xLe4SYM1q55MBj5+/051bnCkYArSkBZiImKcSwggbDhVM=
