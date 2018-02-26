@@ -2,58 +2,106 @@
 
 usage() {
 	# print usage instructions for this digitalocean-exitnode script
+	# if it's a symlink, you dont need to specify <droplet_name>
+	command_start=$([ -h $0 ] \
+		&& echo "$0" \
+		|| echo "$0 <droplet_name>" \
+	)
 	cat <<-END
 	Usage:
-		$0 [command] [options]
-		$0 up [--name <name>]
+		$command_start [command] [options]
+		$command_start up
+		$command_start down [-f]
 
 	Commands:
 		up						create/launch the exitnode
+		down					delete the exitnode
 
 	Options:
 		-h| --help				print this help text
-		--name <name>			name of digitalocean droplet
+		-f						force deletion, i.e. dont ask for confirmation
 	END
 }
 
 DO_EXITNODE_SIZE=${DO_EXITNODE_SIZE:-"512mb"}
-DO_EXITNODE_REGION=${DO_EXITNODE_REGION:-"sfo2"}
+DO_EXITNODE_REGION=${DO_EXITNODE_REGION:-"nyc3"}
 DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS=${DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS:-""}
-DO_EXITNODE_SSH_PRIVATE_KEY_FILE=${DO_EXITNODE_SSH_PRIVATE_KEY_FILE:-"~/.ssh/id_rsa"}
+DO_EXITNODE_SSH_PRIVATE_KEY_FILE=${DO_EXITNODE_SSH_PRIVATE_KEY_FILE:-"$HOME/.ssh/id_rsa"}
+# echo "DO_EXITNODE_SSH_PRIVATE_KEY_FILE=$DO_EXITNODE_SSH_PRIVATE_KEY_FILE"
 _id_rsa_fingerprint="$(ssh-keygen -Emd5 -lf "$DO_EXITNODE_SSH_PRIVATE_KEY_FILE" | cut -d' ' -f2 | cut -d':' -f2- )"
 DO_EXITNODE_SSH_KEY_FINGERPRINT=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$_id_rsa_fingerprint"}
+# echo "DO_EXITNODE_SSH_KEY_FINGERPRINT=$DO_EXITNODE_SSH_KEY_FINGERPRINT"
 DO_EXITNODE_IMAGE=${DO_EXITNODE_IMAGE:-"debian-8-x64"}
 
-echo "DO_EXITNODE_SIZE=$DO_EXITNODE_SIZE"
+debug_echo() {
+	if [ "$DEBUG" != "" ]; then
+	echo "$@"; fi }
 
 main() {
-# main entrypoint for this script
-# arg parsing inspired by https://stackoverflow.com/a/2875513
-while test $# != 0
-do
-    case "$1" in
-	test)
-		_test "${@:2}"
-		shift "$#"
-		;;
-	up)
-		up_exitnode "${@:2}"
-		shift "$#"
-		;;
-    # -A) all_into_one=t
-    #     unpack_unreachable=--unpack-unreachable ;;
-	-h|--help|help)
+	debug_echo "main($@) $#"
+	if [[ "$#" == "0" ]]; then
 		usage
-		exit
-		;;
-    --ben|--other)
-        extra="$extra $1=$2"; shift ;;
-    --) shift; break;;
-    *)  unknown_arg "$1"
-		;;
-    esac
-    shift
-done
+	fi
+
+	if [ -h "$0" ]; then
+		# this file is a symlink, which means we'll treat its filename as the droplet name
+		name="$(basename $0)"
+	elif [ "$#" -gt "1" ]; then
+		echo "$@"
+		# not symlink, get droplet name from first arg
+		name="$1"
+		shift
+	fi
+	
+	# main entrypoint for this script
+	# arg parsing inspired by https://stackoverflow.com/a/2875513
+	while test $# != 0
+	do
+		case "$1" in
+		list)
+			doctl compute droplet list
+			;;
+		test)
+			_test "${@:2}"
+			shift "$#"
+			;;
+		up)
+			# if no args are passed, default droplet name to name of this file
+			args=${@:2}
+			debug_echo "up name=$name args=$args"
+			get_or_create_exitnode $name $args
+			shift "$#"
+			;;
+		down)
+			args=${@:2}
+			debug_echo "down name=$name args=$args"
+			rm_exitnode $name $args
+			shift "$#"
+			;;
+		status)
+			args=${@:2}
+			debug_echo "name=$name args=$args"
+			get_exitnode $name $args
+			shift "$#"
+			;;
+		# -A) all_into_one=t
+		#     unpack_unreachable=--unpack-unreachable ;;
+		-h|--help|help)
+			usage
+			exit
+			;;
+		--ben|--other)
+			extra="$extra $1=$2"; shift ;;
+		--) shift; break;;
+		*)  
+			unknown_arg "$1"
+			was_unknown_arg=1
+			;;
+		esac
+		shift
+	done
+
+	[ "$was_unknown_arg" == 1 ] && usage
 }
 
 _test() {
@@ -63,15 +111,47 @@ _test() {
 	main up
 }
 
-up_exitnode() {
-	echo "up_exitnode($@)"
+get_exitnode() {
+	debug_echo "get_exitnode($@)"
+	name="$1"
+	doctl compute droplet list "$name"
+}
+
+get_or_create_exitnode() {
+	debug_echo "get_or_create_exitnode($@)"
 	name="$1"
 	if do_droplet_exists "$name"; then
-		echo "do droplet already exists"
+		debug_echo "do droplet already exists"
+		get_exitnode "$name"
 	else
-		echo "droplet does not exist. need to create it"
+		debug_echo "droplet does not exist. need to create it"
 		do_droplet_create "$@"
 	fi
+}
+
+rm_exitnode() {
+	debug_echo "rm_exitnode($@)"
+	name="$1"
+	args=${@:1}
+	while test $# != 0
+	do
+		case "$1" in
+		-f)
+			force=1
+			;;
+		*)  unknown_arg "$1"
+			;;
+		esac
+		shift
+	done
+	doctl_delete_args=""
+	if [ "$force" == "1" ]; then
+		echo "its forcd"
+		doctl_delete_args+="-f"
+	fi
+	echo "doctl_delete_args=$doctl_delete_args"
+	echo "FINAL DELETE DROPLET name=$name force=$force"
+	doctl compute droplet delete "$name" $doctl_delete_args
 }
 
 do_droplet_create() {
@@ -90,7 +170,6 @@ do_droplet_create() {
 	echo "do_droplet_create($@)"
 	name="$1"
 	# echo "name=$name"
-	set -x;
 	args="${@:2}"
 	# use ~/.ssh/id_rsa key always.
 	# @TODO(bengo.co): make this configurable
@@ -116,8 +195,16 @@ do_droplet_create() {
 }
 
 do_droplet_exists() {
-	echo "do_droplet_exists($@)"
-	false
+# usage: do_droplet_exists <name>
+	# echo "do_droplet_exists($@)"
+	name="$1"
+	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{ print $1 }')"
+	if [ "0" = "$num_droplets_with_name" ]; then
+		echo "num_droplets_with_name is zero"
+		false
+	else
+		true
+	fi
 }
 
 unknown_arg() {
