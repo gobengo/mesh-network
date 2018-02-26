@@ -22,7 +22,7 @@ usage() {
 
 main() {
 	if $DOCKER_BUILD; then
-        docker build -t bengomesh "$this_dir/.." > /dev/null
+        docker build -t "$docker_tag" "$this_dir/.." > /dev/null
     fi
     docker run \
         -v "$(pwd)/$this_dir/../":/opt/bengomesh \
