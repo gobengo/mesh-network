@@ -238,7 +238,7 @@ configure_do_exitnode() {
 	args=${*:1}
 	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
 	debug_echo "node_ip=$node_ip"
-	bash -x "$this_dir/../lib/gobengo/exitnode/build/remote" "root@$node_ip"
+	"$this_dir/../lib/gobengo/exitnode/build/remote" "root@$node_ip"
 }
 
 droplet_ip() {
