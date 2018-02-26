@@ -21,15 +21,15 @@ usage() {
 }
 
 main() {
-    set -x
 	if $DOCKER_BUILD; then
         docker build -t "$docker_tag" "$this_dir/.." > /dev/null
     fi
-    key_file="$HOME/.ssh/id_rsa.pub"
+    key_file="$HOME/.ssh/id_rsa"
+    public_key_file="$key_file.pub"
     if test -f "$key_file"; then
-        extra_docker_run_args+=("-v $key_file:/root/.ssh/id_rsa.pub")
+        extra_docker_run_args+=("-v $key_file:/root/.ssh/id_rsa -v $public_key_file:/root/.ssh/id_rsa.pub")
     fi
-    doctl_config_file="$HOME/.config/doctl/config.yaml"
+    # doctl_config_file="$HOME/.config/doctl/config.yaml"
     # if test -f "$doctl_config_file"; then
     #     extra_docker_run_args+=("-v $doctl_config_file:/root/.config/doctl/config.yaml")
     # fi

@@ -29,3 +29,16 @@ wait_for_ssh() {
 		sleep 2
 	done
 }
+
+ssh_key_fingerprint() {
+	ssh_key_file="$1"
+	case "$(uname)" in
+		Darwin) fingerprint="$(ssh-keygen -Emd5 -lf "$ssh_key_file" | cut -d' ' -f2 | cut -d':' -f2- )"
+			;;
+		*)
+		# tested on debian jessie. Doesn't have -Emd5 like on mac
+		fingerprint="$(ssh-keygen -lf "$ssh_key_file" | cut -d' ' -f 2)"
+		;;
+	esac
+	echo "$fingerprint"
+}
