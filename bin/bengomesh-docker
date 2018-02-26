@@ -21,18 +21,22 @@ usage() {
 }
 
 main() {
+    set -x
 	if $DOCKER_BUILD; then
         docker build -t "$docker_tag" "$this_dir/.." > /dev/null
     fi
     key_file="$HOME/.ssh/id_rsa.pub"
     if test -f "$key_file"; then
-        key_file_docker_run_args="-v $key_file:/root/.ssh/id_rsa.pub"
+        extra_docker_run_args+=("-v $key_file:/root/.ssh/id_rsa.pub")
+    fi
+    doctl_config_file="$HOME/.config/doctl/config.yaml"
+    if test -f "$doctl_config_file"; then
+        extra_docker_run_args+=("-v $doctl_config_file:/root/.config/doctl/config.yaml")
     fi
 	# shellcheck disable=SC2086
     docker run \
         -v "$(pwd)/$this_dir/../":/opt/bengomesh \
-        -v "$HOME"/.config/doctl/config.yaml:/root/.config/doctl/config.yaml \
-        $key_file_docker_run_args \
+        ${extra_docker_run_args[*]} \
         "$docker_tag" \
         "$@"
 }
