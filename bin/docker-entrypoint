@@ -4,9 +4,16 @@ this_dir="$(dirname "$0")"
 
 echo "in docker-entrypoint DIGITALOCEAN_ACCESS_TOKEN=$DIGITALOCEAN_ACCESS_TOKEN"
 
-# if do token is defined
-if [ ! -z "$DIGITALOCEAN_ACCESS_TOKEN" ]; then
-    echo "$DIGITALOCEAN_ACCESS_TOKEN" | doctl auth init
-fi
+# if DO token is defined
+main() {
+	if [ ! -z "$DIGITALOCEAN_ACCESS_TOKEN" ]; then
+		doctl_config_file="~/.config/doctl/config.yaml"
+		mkdir -p "$(dirname "$doctl_config_file")"
+		cat <<-EOF > "$doctl_config_file"
+		access-token: $DIGITALOCEAN_ACCESS_TOKEN
+		EOF
+	fi
+	"$this_dir/bengomesh" "$@"
+}
 
-"$this_dir/bengomesh" "$@"
+main "$@"
