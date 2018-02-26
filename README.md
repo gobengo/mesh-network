@@ -2,12 +2,31 @@
 
 this should set up my mesh network.
 
-The network should be able to span
+What does that mean?
+
+Right now I've got some tools here to spin up and down virtual computers (i.e. nodes) that will all talk to each other on [peoplesopen.network](https://peoplesopen.net/documentation/). Follow [sudomesh/node-whisperer-program](https://github.com/sudomesh/node-whisperer-program) to learn with us.
+
+There are a couple roles that different computers play to make this network happen
+* all nodes
+  * run [babeld](https://github.com/jech/babeld) - find and chat with other nodes so you know which ones are closest. To reach far nodes, you ask close ones to route the packet for you.
+  * run [tunneldigger](http://tunneldigger.readthedocs.io/en/latest/) client when connecting to exit nodes
+* exitnodes - run [sudomesh/exitnode](https://github.com/sudomesh/exitnode), which includes a [tunneldigger.broker](https://github.com/sudomesh/tunneldigger/tree/master/broker). They are the last hop from other nodes (e.g. a router in your house) to the 'big internet' that you're used to. In this way, these nodes sort of act like VPN servers, helping anonymize your traffic and that of others meshers.
+* home nodes - run in your home! And usually have radio antennas so they can launch Wi-Fi Network SSIDs (e.g. peoplesopen.net) for others to join, and to find other nodes to mesh with wirelessly.
+
+What's the end result?
+* if you run a home node, and its close to other home nodes, the home nodes will mesh. And even if you don't have an internet connection, you can use your neighbor's as long as you can hop to another node with an internet connection
+* even if the clouds crash, including all exit nodes and the ISPs themselves, you will still have a little baby internet that works to talk to any node on the network that you can 'hop to'. The more of your neighbors use it, the more useful it is.
+
+## Devices
+
+For my early goals, the network should be able to span
 * 2 x [WD-N600](https://wiki.openwrt.org/toh/wd/n600)s  - Used as wireless gateways throughout my apt. Currently running sudowrt.
 * 1 x container running on k8s.bengo.is that has an IP on this mesh and can respond to simple HTTP requests
 * 1 x container running on k8s.bengo.is that has a public nonmesh IP/domain, and hosts a web service that lets you find out info about the mesh. e.g. which IPs are mapped to what
 
 ## Usage
+
+These scripts will have commands added to them over time.
 
 ```
 ⚡ ./bin/bengomesh 
