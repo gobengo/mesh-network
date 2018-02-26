@@ -131,7 +131,6 @@ main() {
 			;;
 		check)
 			args=${*:2}
-			echo "args=$args"
 			shift "$#"
 			debug_echo "check name=$name args=$args"
 			command() {
@@ -293,7 +292,6 @@ do_droplet_create() {
 	}
 	debug_echo "do_droplet_create($*)"
 	name="$1"
-	# echo "name=$name"
 	_ssh_key_fingerprint=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$(ssh_key_fingerprint "$DO_EXITNODE_SSH_PUBLIC_KEY_FILE")"}
 	declare -a doctl_create_args_array=("$DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS")
 
@@ -310,7 +308,7 @@ do_droplet_create() {
 
 do_droplet_exists() {
 # usage: do_droplet_exists <name>
-	# echo "do_droplet_exists($*)"
+	debug_echo "do_droplet_exists($*)"
 	name="$1"
 	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{ print $1 }')"
 	if [ "0" = "$num_droplets_with_name" ]; then

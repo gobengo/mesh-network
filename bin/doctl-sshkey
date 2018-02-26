@@ -5,7 +5,7 @@ this_dir="$(dirname "$0")"
 . "$this_dir/lib" # ssh_key_fingerprint
 
 main() {
-    echo "main($*) $#"
+    debug_echo "main($*) $#"
     case "$#" in
         1)  command="$1";;
         2)  key_file="$1"
