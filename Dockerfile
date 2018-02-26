@@ -17,6 +17,8 @@ RUN mv /tmp/doctl /usr/local/bin/doctl
 
 ## deps
 RUN apt-get install -yq \
+    iproute2 \
+    net-tools \
     openssh-client \
     rsync \
     ;
