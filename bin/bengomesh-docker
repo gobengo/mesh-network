@@ -36,6 +36,7 @@ main() {
 	# shellcheck disable=SC2086
     docker run \
         -t \
+        -e DEBUG="$DEBUG" \
         -e DIGITALOCEAN_ACCESS_TOKEN="$DIGITALOCEAN_ACCESS_TOKEN" \
         -v "$(pwd)/$this_dir/../":/opt/bengomesh \
         ${extra_docker_run_args[*]} \
