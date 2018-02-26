@@ -10,6 +10,8 @@ services:
   - docker
 
 before_install:
+# modify submodule URLs so travis fetches over HTTPS not SSH
+- sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
 - make
 - docker build -t exitnode .
 
