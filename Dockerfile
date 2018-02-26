@@ -19,6 +19,7 @@ RUN mv /tmp/doctl /usr/local/bin/doctl
 RUN apt-get install -yq \
     openssh-client \
     rsync \
+    ;
 
 ARG PROJECT_DIR=/opt/bengomesh
 RUN mkdir -p $PROJECT_DIR
