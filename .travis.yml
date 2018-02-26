@@ -14,7 +14,7 @@ before_install:
 - ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
 - ./bin/bengomesh-docker doctl-sshkey save
 script:
-- DEBUG=1 ./bin/bengomesh-docker digitalocean-exitnode test
+- ./bin/bengomesh-docker digitalocean-exitnode test
 after_script:
 - ./bin/bengomesh-docker doctl-sshkey delete -f
 dd:
