@@ -15,11 +15,13 @@ RUN mv /tmp/doctl /usr/local/bin/doctl
 
 # This project
 
-RUN apt-get install -yq openssh-client
-
 ARG PROJECT_DIR=/opt/bengomesh
-RUN mkdir $PROJECT_DIR
+RUN mkdir -p $PROJECT_DIR
 WORKDIR $PROJECT_DIR
 COPY . $PROJECT_DIR
-
 ENTRYPOINT ["./bin/docker-entrypoint"]
+
+## deps
+apt-get install -yq \
+    openssh-client \
+    rsync \
