@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+this_dir="$(dirname "$0")"
+# shellcheck source=./lib
+. "$this_dir/lib"
+
+main() {
+    wait_for_ssh_keyscan "$1"
+}
+
+main "$@"

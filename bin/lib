@@ -1,7 +1,31 @@
+#!/usr/bin/env bash
 # common library functions for bengomesh
 
 debug_echo() {
 	if [ "$DEBUG" != "" ]; then
 		>&2 echo "$@";
 	fi
+}
+
+wait_for_ssh_keyscan() {
+	set -x
+	ssh_to_test="$1"
+	while [[ "$keyscan_success" != "1" ]]; do
+		keyscan_out="$(ssh-keyscan "$@")"
+		if [[ "$keyscan_out" != "" ]]; then
+			keyscan_success=1
+		else
+			sleep 2
+		fi
+	done
+	echo "$keyscan_out"
+}
+
+wait_for_ssh() {
+	ssh_to_test="$1"
+	while ! ssh "$ssh_to_test" exit > /dev/null 2>&1
+	do
+		printf "."
+		sleep 2
+	done
 }

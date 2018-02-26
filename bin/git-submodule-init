@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 this_file="$0"
-parent_dir="$(dirname $(dirname "$this_file"))"
+parent_dir="$(dirname "$(dirname "$this_file")")"
 
 cd "$parent_dir" || exit
 

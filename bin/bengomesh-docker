@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 this_dir="$(dirname "$0")"
+# shellcheck source=./lib
 . "$this_dir/lib"
 
 docker_tag=bengomesh-docker
@@ -27,7 +28,7 @@ main() {
         -v "$(pwd)/$this_dir/../":/opt/bengomesh \
         -v "$HOME"/.config/doctl/config.yaml:/root/.config/doctl/config.yaml \
         -v "$HOME"/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub \
-        bengomesh \
+        "$docker_tag" \
         "$@"
 }
 

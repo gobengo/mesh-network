@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 this_dir="$(dirname "$0")"
+# shellcheck source=./lib
 . "$this_dir/lib"
 
 usage() {
@@ -15,7 +16,7 @@ usage() {
 }
 
 main() {
-	debug_echo "main($@) $#"
+	debug_echo "main($*) $#"
 	if [[ "$#" == "0" ]]; then
         needs_usage=1
 	fi
@@ -26,7 +27,7 @@ main() {
 	do
 		case "$1" in
 		digitalocean-exitnode)
-			command="$this_dir/digitalocean-exitnode ${@:2}"
+			command="$this_dir/digitalocean-exitnode ${*:2}"
 			shift "$#"
 			;;
 		-h|--help|help)

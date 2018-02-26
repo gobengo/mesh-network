@@ -2,12 +2,13 @@
 set -e
 
 this_dir="$(dirname "$0")"
+# shellcheck source=./lib
 . "$this_dir/lib"
 
 usage() {
 	# print usage instructions for this digitalocean-exitnode script
 	# if it's a symlink, you dont need to specify <droplet_name>
-	command_start=$([ -h $0 ] \
+	command_start=$([ -h "$0" ] \
 		&& echo "$0" \
 		|| echo "$0 <droplet_name>" \
 	)
@@ -54,14 +55,14 @@ ssh_key_fingerprint() {
 }
 
 main() {
-	debug_echo "main($@) $#"
+	debug_echo "main($*) $#"
 	if [[ "$#" == "0" ]]; then
 		usage
 	fi
 
 	if [ -h "$0" ]; then
 		# this file is a symlink, which means we'll treat its filename as the droplet name
-		name="$(basename $0)"
+		name="$(basename "$0")"
 	elif [ "$#" -gt "1" ]; then
 		# not symlink, get droplet name from first arg
 		name="$1"
@@ -79,7 +80,7 @@ main() {
 			}
 			;;
 		test)
-			args=${@:2}
+			args=${*:2}
 			shift "$#"			
 			command() {
 				_test "$args"
@@ -87,54 +88,55 @@ main() {
 			;;
 		up)
 			# if no args are passed, default droplet name to name of this file
-			args=${@:2}
+			args=${*:2}
 			shift "$#"
 			debug_echo "up name=$name args=$args"
 			command() {
 				set -x
-				droplet=$(get_or_create_exitnode $name $args)
+				droplet=$(get_or_create_exitnode "$name" "$args")
 				droplet_ip="$(echo "$droplet" | sed 1d | awk '{ print $3 }')"
-				ssh-keyscan -H "$droplet_ip" >> ~/.ssh/known_hosts
-				configure_do_exitnode $name
+				wait_for_ssh_keyscan -H "$droplet_ip" >> ~/.ssh/known_hosts
+				configure_do_exitnode "$name"
 			}
 			;;
 		down)
-			args=${@:2}
+			args=${*:2}
 			shift "$#"
 			debug_echo "down name=$name args=$args"
 			command() {
-				rm_exitnode $name $args
+				rm_exitnode "$name" "$args"
 			}
 			;;
 		status)
-			args=${@:2}
+			args=${*:2}
 			shift "$#"
 			debug_echo "name=$name args=$args"
 			command() {
-				get_exitnode $name $args
+				get_exitnode "$name" "$args"
 			}
 			;;
 		configure)
-			args=${@:2}
+			args=${*:2}
 			shift "$#"
 			debug_echo "down name=$name args=$args"
 			command() {
-				configure_do_exitnode $name $args
+				configure_do_exitnode "$name" "$args"
 			}
 			;;
 		ip)
-			args=${@:2}
+			args=${*:2}
 			shift "$#"
 			command() {
 				droplet_ip "$name"
 			}
 			;;
 		check)
-			args=${@:2}
+			args=${*:2}
+			echo "args=$args"
 			shift "$#"
 			debug_echo "check name=$name args=$args"
 			command() {
-				check_do_exitnode $name $args
+				check_do_exitnode "$name" "$args"
 			}
 			;;
 		-h|--help|help)
@@ -164,7 +166,7 @@ _test() {
 	# set -x
 	set -e
 
-	debug_echo "_test($@)"
+	debug_echo "_test($*)"
 	test_vm_name="bengomesh-test-vm-0"
 
 	debug_echo "testing up"
@@ -178,7 +180,7 @@ _test() {
 }
 
 get_exitnode() {
-	debug_echo "get_exitnode($@)"
+	debug_echo "get_exitnode($*)"
 	name="$1"
 
 	listed="$(doctl compute droplet list "$name")"
@@ -188,7 +190,7 @@ get_exitnode() {
 }
 
 get_or_create_exitnode() {
-	debug_echo "get_or_create_exitnode($@)"
+	debug_echo "get_or_create_exitnode($*)"
 	name="$1"
 	if do_droplet_exists "$name"; then
 		debug_echo "do droplet already exists"
@@ -204,10 +206,10 @@ rm_exitnode() {
 	# Usage: rm_exitnode <droplet_name> [-f]
 	# Options
 	# 	-f			force removal. dont ask for permissions
-	debug_echo "rm_exitnode($@)"
+	debug_echo "rm_exitnode($*)"
 	name="$1"
 	shift
-	debug_echo "name=$name args=$@"
+	debug_echo "name=$name args=$*"
 	while test $# != 0
 	do
 		case "$1" in
@@ -229,9 +231,9 @@ rm_exitnode() {
 
 configure_do_exitnode() {
 # ssh into a fresh debian installation and make it an exitnode
-	debug_echo "configure_exitnode($@)"
+	debug_echo "configure_exitnode($*)"
 	name="$1"
-	args=${@:1}
+	args=${*:1}
 	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
 	debug_echo "node_ip=$node_ip"
 	"$this_dir/../lib/gobengo/exitnode/build/remote" "root@$node_ip"
@@ -240,34 +242,34 @@ configure_do_exitnode() {
 droplet_ip() {
 # get ip address of droplet by name
 	name="$1"
-	echo "$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
+	get_exitnode "$name" | sed 1d | awk '{print $3}'
 }
 
 check_do_exitnode() {
 # ssh into a host and return diagnostic info to check if exitnode is working ok
 # Usage: check_do_exitnode <droplet_name>
-	debug_echo "check_do_exitnode($@)"
+	debug_echo "check_do_exitnode($*)"
 	name="$1"
-	args=${@:1}
+	args=${*:1}
 	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
 	ssh_to="root@$node_ip"
 	_indent() {
-		$@ | sed 's/^/	/'
+		"$@" | sed 's/^/	/'
 	}
 	cat <<-END
 	exitnode diagnostic for $node_ip:
 	
 	ps aux | grep babel:
-	$(_indent ssh $ssh_to ps aux | grep babel)
+	$(_indent ssh "$ssh_to" ps aux | grep babel)
 
 	cat /etc/babeld.conf:
-	$(_indent ssh $ssh_to cat /etc/babeld.conf)
+	$(_indent ssh "$ssh_to" cat /etc/babeld.conf)
 
 	ps aux | grep tunneldigger:
-	$(_indent ssh $ssh_to ps aux | grep tunneldigger)
+	$(_indent ssh "$ssh_to" ps aux | grep tunneldigger)
 
 	cat /opt/tunneldigger/broker/l2tp_broker.cfg | head -n7:
-	$(_indent ssh $ssh_to cat /opt/tunneldigger/broker/l2tp_broker.cfg | head -n7)
+	$(_indent ssh "$ssh_to" cat /opt/tunneldigger/broker/l2tp_broker.cfg | head -n7)
 
 	ip route:
 	$(_indent ip route)
@@ -287,34 +289,26 @@ do_droplet_create() {
 			[extra_doctl_droplet_create_args]		Will be passed to \`doctl compute droplet create\`
 		END
 	}
-	debug_echo "do_droplet_create($@)"
+	debug_echo "do_droplet_create($*)"
 	name="$1"
 	# echo "name=$name"
-	args="${@:2}"
-	_ssh_key_fingerprint=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$(ssh_key_fingerprint $DO_EXITNODE_SSH_PUBLIC_KEY_FILE)"}
+	_ssh_key_fingerprint=${DO_EXITNODE_SSH_KEY_FINGERPRINT:-"$(ssh_key_fingerprint "$DO_EXITNODE_SSH_PUBLIC_KEY_FILE")"}
+	declare -a doctl_create_args_array=("$DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS")
+
+	# shellcheck disable=SC2086
 	doctl compute droplet create "$name" \
 		--region "$DO_EXITNODE_REGION" \
 		--image "$DO_EXITNODE_IMAGE" \
 		--size "$DO_EXITNODE_SIZE" \
 		--ssh-keys "$_ssh_key_fingerprint" \
-		$DO_EXITNODE_DOCTL_DROPLET_CREATE_ARGS \
-		--wait
+		--wait \
+		${doctl_create_args_array[*]}
 
-	# while test $# != 0; do
-	# 	case "$1" in
-	# 	--name)
-	# 		name=$2
-	# 		shift 2
-	# 		;;
-	# 	esac
-	# 	shift
-	# done
-	# echo "name=$name"
 }
 
 do_droplet_exists() {
 # usage: do_droplet_exists <name>
-	# echo "do_droplet_exists($@)"
+	# echo "do_droplet_exists($*)"
 	name="$1"
 	num_droplets_with_name="$(doctl compute droplet list "$name" | sed 1d | wc -l | awk '{ print $1 }')"
 	if [ "0" = "$num_droplets_with_name" ]; then
@@ -325,7 +319,7 @@ do_droplet_exists() {
 }
 
 unknown_arg() {
-	echo "unknown_arg $@"
+	echo "unknown_arg" "$@"
 }
 
 main "$@"
