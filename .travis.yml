@@ -14,9 +14,7 @@ git:
 
 before_install:
 # modify submodule URLs so travis fetches over HTTPS not SSH
-- cat .gitmodules
 - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-- cat .gitmodules
 - make
 - docker build -t exitnode .
 - ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
