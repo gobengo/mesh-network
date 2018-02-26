@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+this_file="$0"
+parent_dir="$(dirname $(dirname "$this_file"))"
+
+cd "$parent_dir" || exit
+
+git submodule init
+git submodule update

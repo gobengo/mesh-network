@@ -35,7 +35,9 @@ DO_EXITNODE_IMAGE=${DO_EXITNODE_IMAGE:-"debian-8-x64"}
 
 debug_echo() {
 	if [ "$DEBUG" != "" ]; then
-	echo "$@"; fi }
+		>&2 echo "$@";
+	fi
+}
 
 main() {
 	debug_echo "main($@) $#"
@@ -84,8 +86,12 @@ main() {
 			get_exitnode $name $args
 			shift "$#"
 			;;
-		# -A) all_into_one=t
-		#     unpack_unreachable=--unpack-unreachable ;;
+		configure)
+			args=${@:2}
+			debug_echo "down name=$name args=$args"
+			configure_do_exitnode $name $args
+			shift "$#"
+			;;
 		-h|--help|help)
 			usage
 			exit
@@ -152,6 +158,15 @@ rm_exitnode() {
 	echo "doctl_delete_args=$doctl_delete_args"
 	echo "FINAL DELETE DROPLET name=$name force=$force"
 	doctl compute droplet delete "$name" $doctl_delete_args
+}
+
+configure_do_exitnode() {
+# ssh into a fresh debian installation and make it an exitnode
+	debug_echo "configure_exitnode($@)"
+	name="$1"
+	args=${@:1}
+	node_ip="$(get_exitnode "$name" | sed 1d | awk '{print $3}')"
+	debug_echo "node_ip=$node_ip"
 }
 
 do_droplet_create() {

@@ -1,0 +1,3 @@
+[submodule "lib/gobengo/exitnode"]
+	path = lib/gobengo/exitnode
+	url = git@github.com:gobengo/exitnode
