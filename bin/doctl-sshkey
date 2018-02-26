@@ -5,7 +5,6 @@ this_dir="$(dirname "$0")"
 . "$this_dir/lib" # ssh_key_fingerprint
 
 main() {
-    set -x
     echo "main($*) $#"
     case "$#" in
         1)  command="$1";;
@@ -35,7 +34,6 @@ save_doctl_sshkey() {
 }
 
 delete_doctl_sshkey() {
-    set -x
     public_key_file="$1"
     rest_args=("${@:3}")
     key_fingerprint="$(ssh_key_fingerprint "$public_key_file")"

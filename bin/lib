@@ -8,7 +8,6 @@ debug_echo() {
 }
 
 wait_for_ssh_keyscan() {
-	set -x
 	ssh_to_test="$1"
 	while [[ "$keyscan_success" != "1" ]]; do
 		keyscan_out="$(ssh-keyscan "$@")"

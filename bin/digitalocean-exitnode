@@ -92,7 +92,6 @@ main() {
 			shift "$#"
 			debug_echo "up name=$name args=$args"
 			command() {
-				set -x
 				droplet=$(get_or_create_exitnode "$name" "$args")
 				droplet_ip="$(echo "$droplet" | sed 1d | awk '{ print $3 }')"
 				wait_for_ssh_keyscan -H "$droplet_ip" >> ~/.ssh/known_hosts
