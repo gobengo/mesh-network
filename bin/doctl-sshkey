@@ -38,7 +38,6 @@ delete_doctl_sshkey() {
     set -x
     public_key_file="$1"
     rest_args=("${@:3}")
-    echo "delete rest_args=$rest_args"
     key_fingerprint="$(ssh_key_fingerprint "$public_key_file")"
     # shellcheck disable=SC2086
     doctl compute ssh-key delete "$key_fingerprint" ${rest_args[*]}
