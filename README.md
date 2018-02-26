@@ -18,23 +18,28 @@ Options:
 -h| --help                              print this help text
 ```
 
-Docker
+### Docker
+
+```
+⚡ ./bin/bengomesh-docker
+Usage:
+./bin/bengomesh digitalocean-exitnode [options]
+./bin/bengomesh doctl-sshkey
+
+Options:
+-h| --help                              print this help text
+```
+
+It's basically just doing this
 
 ```
 ⚡ docker build -t bengomesh .
 # ...
 ⚡ docker run \
-    -v /Users/ben/dev/sudomesh/bengomesh:/opt/bengomesh \
-    -v  ~/.config/doctl/config.yaml:/root/.config/doctl/config.yaml \
-    -v /Users/ben/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub bengomesh \
-    digitalocean-exitnode list
-# Or here is a convenience wrapper for the same `docker run...`
-⚡ ./bin/bengomesh-docker -h
-Usage:
-./bengomesh digitalocean-exitnode [options]
-
-Options:
--h| --help                              print this help text
+    -v "$HOME/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub" \
+    -v "/Users/ben/.config/doctl/config.yaml:/root/.config/doctl/config.yaml" \
+    bengomesh
+# ... help text
 ```
 
 ## digitalocean-exitnode
@@ -43,7 +48,10 @@ Manage exitnodes in DigitalOcean
 
 Status:
 * [x] - create/delete droplet via `doctl`
-* [ ] - provision exitnode once droplet is booted using makenode
+* [x] - provision exitnode once droplet is booted using makenode
+* [x] - check - place to put common diagnostic output
+* [ ] - check_babeld - actually try to udp with babeld and make sure it's responding well
+* [ ] - check_tunnel_broker - actually try to talk with tunneldigger.broker and make sure its responding well
 
 ```
 ⚡ ./bin/bengomesh digitalocean-exitnode
